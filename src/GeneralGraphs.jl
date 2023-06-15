@@ -8,6 +8,7 @@ using LinearAlgebra
 
 export AbstractGraph, GeneralGraph, NormalGraph, NormalWeightedGraph, NormalUnweightedGraph
 export num_nodes, num_edges
+export LCC, LCC!
 
 abstract type AbstractGraph end
 abstract type NormalGraph <: AbstractGraph end
@@ -17,6 +18,7 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
     nodes::Set{Int}
     edges::Dict{Tuple{Int,Int},T}
     GeneralGraph{T}() where {T<:Real} = new{T}("", Set{Int}(), Dict{Tuple{Int,Int},T}())
+    GeneralGraph{T}(name::AbstractString, nodes::Set{Int}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, nodes, edges)
     function GeneralGraph(name::AbstractString, file_path::AbstractString)
         println("Reading graph from $file_path...")
         nodes = Set{Int}()
@@ -72,12 +74,52 @@ num_nodes(g::GeneralGraph) = length(g.nodes)
 num_edges(g::GeneralGraph) = length(g.edges)
 prefix(::GeneralGraph) = "GeneralUndiGraph"
 
+function LCC(g::GeneralGraph)
+    println("Finding LCC of graph $(g.name)...")
+    fa = DefaultDict{Int,Int}(-1)
+    find(x) = fa[x] < 0 ? x : (fa[x] = find(fa[x]); fa[x])
+    for (u, v) in ProgressBar(keys(g.edges))
+        u, v = find(u), find(v)
+        if u == v
+            continue
+        end
+        if -fa[u] < -fa[v]
+            u, v = v, u
+        end
+        fa[u] += fa[v]
+        fa[v] = u
+    end
+    root = argmin(fa)
+    new_nodes = filter(x -> find(x) == root, g.nodes)
+    new_edges = filter(e -> find(e.first[1]) == root && find(e.first[2]) == root, g.edges)
+    return GeneralGraph{eltype(values(new_edges))}("$(g.name)_LCC", new_nodes, new_edges)
+end
+
+function LCC!(g::GeneralGraph)
+    println("Finding LCC on graph $(g.name)...")
+    fa = DefaultDict{Int,Int}(-1)
+    find(x) = fa[x] < 0 ? x : (fa[x] = find(fa[x]); fa[x])
+    for (u, v) in ProgressBar(keys(g.edges))
+        u, v = find(u), find(v)
+        if u == v
+            continue
+        end
+        if -fa[u] < -fa[v]
+            u, v = v, u
+        end
+        fa[u] += fa[v]
+        fa[v] = u
+    end
+    root = argmin(fa)
+    filter!(x -> find(x) == root, g.nodes)
+    filter!(e -> find(e.first[1]) == root && find(e.first[2]) == root, g.edges)
+end
+
 function Base.write(io::IO, g::GeneralGraph)
     n, m = size(g)
     write(io, "# $(prefix(g)): $(g.name)\n# Nodes: $n Edges: $m\n")
-    for e in ProgressBar(sort(collect(g.edges)))
-        e_str = join(e, '\t')
-        write(io, "$e_str\n")
+    for (u, v) in g.edges |> keys |> collect |> sort |> ProgressBar
+        write(io, "$u\t$v\t$(g.edges[(u,v)])\n")
     end
 end
 
