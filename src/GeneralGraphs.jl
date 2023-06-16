@@ -19,11 +19,11 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
     edges::Dict{Tuple{Int,Int},T}
     GeneralGraph{T}() where {T<:Real} = new{T}("", Set{Int}(), Dict{Tuple{Int,Int},T}())
     GeneralGraph{T}(name::AbstractString, nodes::Set{Int}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, nodes, edges)
-    function GeneralGraph(name::AbstractString, file_path::AbstractString)
-        println("Reading graph from $file_path...")
+    function GeneralGraph(name::AbstractString, source::Union{AbstractString,IO})
+        println("Reading graph $name...")
         nodes = Set{Int}()
         edges = Dict{Tuple{Int,Int},Int}()
-        for line in ProgressBar(eachline(file_path))
+        for line in ProgressBar(eachline(source))
             if line[begin] in "#%"
                 continue
             end
@@ -43,11 +43,11 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
         end
         new{Int}(name, nodes, edges)
     end
-    function GeneralGraph{T}(generator::Function, name::AbstractString, file_path::AbstractString) where {T<:Real}
-        println("Reading graph from $file_path...")
+    function GeneralGraph{T}(generator::Function, name::AbstractString, source::Union{AbstractString,IO}) where {T<:Real}
+        println("Reading graph $name...")
         nodes = Set{Int}()
         edges = Dict{Tuple{Int,Int},T}()
-        for line in ProgressBar(eachline(file_path))
+        for line in ProgressBar(eachline(source))
             if line[begin] in "#%"
                 continue
             end
@@ -172,8 +172,8 @@ struct NormalWeightedGraph{T<:Real} <: NormalGraph
         normalized_weights = [ProbabilityWeights(normalize(weights[u], 1)) for u in (1:n)]
         new(n, length(g.edges), g.name, adjs, weights, normalized_weights)
     end
-    NormalWeightedGraph(name::AbstractString, file_path::AbstractString; renumber::Bool) = NormalWeightedGraph{Int}(GeneralGraph(name, file_path), renumber)
-    NormalWeightedGraph{T}(generator::Function, name::AbstractString, file_path::AbstractString; renumber::Bool) where {T<:Real} = NormalWeightedGraph{T}(GeneralGraph{T}(generator, name, file_path), renumber)
+    NormalWeightedGraph(name::AbstractString, source::Union{AbstractString,IO}; renumber::Bool) = NormalWeightedGraph{Int}(GeneralGraph(name, source), renumber)
+    NormalWeightedGraph{T}(generator::Function, name::AbstractString, source::Union{AbstractString,IO}; renumber::Bool) where {T<:Real} = NormalWeightedGraph{T}(GeneralGraph{T}(generator, name, source), renumber)
 end
 
 num_nodes(g::NormalWeightedGraph) = g.n
@@ -235,7 +235,7 @@ struct NormalUnweightedGraph <: NormalGraph
         end
         new(n, length(g.edges), g.name, adjs)
     end
-    NormalUnweightedGraph(name::AbstractString, file_path::AbstractString; renumber::Bool) = NormalUnweightedGraph(GeneralGraph{Int}(() -> 1, name, file_path), renumber)
+    NormalUnweightedGraph(name::AbstractString, source::Union{AbstractString,IO}; renumber::Bool) = NormalUnweightedGraph(GeneralGraph{Int}(() -> 1, name, source), renumber)
 end
 
 num_nodes(g::NormalUnweightedGraph) = g.n
