@@ -115,6 +115,8 @@ function LCC!(g::GeneralGraph)
     filter!(e -> find(e.first[1]) == root && find(e.first[2]) == root, g.edges)
 end
 
+Base.write(file_path::AbstractString, g::AbstractGraph) = open(io -> write(io, g), file_path, "w")
+
 function Base.write(io::IO, g::GeneralGraph)
     n, m = size(g)
     write(io, "# $(prefix(g)): $(g.name)\n# Nodes: $n Edges: $m\n")
@@ -130,12 +132,13 @@ struct NormalWeightedGraph{T<:Real} <: NormalGraph
     adjs::Vector{Vector{Int}}
     weights::Vector{Vector{T}}
     normalized_weights::Vector{ProbabilityWeights}
-    function NormalWeightedGraph{T}(g::GeneralGraph, renumber::Bool) where {T<:Real}
+    function NormalWeightedGraph(g::GeneralGraph{T}) where {T<:Real}
         n = num_nodes(g)
         o2n = DefaultDict{Int,Int}(() -> length(o2n) + 1)
         degs = zeros(Int, n)
         adjs = Vector{Vector{Int}}(undef, n)
         weights = Vector{Vector{T}}(undef, n)
+        renumber = maximum(g.nodes; init=0) != n
         if renumber
             for (u, v) in ProgressBar(keys(g.edges))
                 new_u, new_v = o2n[u], o2n[v]
@@ -170,10 +173,10 @@ struct NormalWeightedGraph{T<:Real} <: NormalGraph
             permute!(adjs[i], p), permute!(weights[i], p)
         end
         normalized_weights = [ProbabilityWeights(normalize(weights[u], 1)) for u in (1:n)]
-        new(n, length(g.edges), g.name, adjs, weights, normalized_weights)
+        new{T}(n, length(g.edges), g.name, adjs, weights, normalized_weights)
     end
-    NormalWeightedGraph(name::AbstractString, source::Union{AbstractString,IO}; renumber::Bool) = NormalWeightedGraph{Int}(GeneralGraph(name, source), renumber)
-    NormalWeightedGraph{T}(generator::Function, name::AbstractString, source::Union{AbstractString,IO}; renumber::Bool) where {T<:Real} = NormalWeightedGraph{T}(GeneralGraph{T}(generator, name, source), renumber)
+    NormalWeightedGraph(name::AbstractString, source::Union{AbstractString,IO}) = NormalWeightedGraph(GeneralGraph(name, source))
+    NormalWeightedGraph{T}(generator::Function, name::AbstractString, source::Union{AbstractString,IO}) where {T<:Real} = NormalWeightedGraph(GeneralGraph{T}(generator, name, source))
 end
 
 num_nodes(g::NormalWeightedGraph) = g.n
@@ -199,11 +202,12 @@ struct NormalUnweightedGraph <: NormalGraph
     m::Int
     name::AbstractString
     adjs::Vector{Vector{Int}}
-    function NormalUnweightedGraph(g::GeneralGraph, renumber::Bool)
+    function NormalUnweightedGraph(g::GeneralGraph)
         n = num_nodes(g)
         o2n = DefaultDict{Int,Int}(() -> length(o2n) + 1)
         degs = zeros(Int, n)
         adjs = Vector{Vector{Int}}(undef, n)
+        renumber = maximum(g.nodes; init=0) != n
         if renumber
             for (u, v) in ProgressBar(keys(g.edges))
                 new_u, new_v = o2n[u], o2n[v]
@@ -235,7 +239,7 @@ struct NormalUnweightedGraph <: NormalGraph
         end
         new(n, length(g.edges), g.name, adjs)
     end
-    NormalUnweightedGraph(name::AbstractString, source::Union{AbstractString,IO}; renumber::Bool) = NormalUnweightedGraph(GeneralGraph{Int}(() -> 1, name, source), renumber)
+    NormalUnweightedGraph(name::AbstractString, source::Union{AbstractString,IO}) = NormalUnweightedGraph(GeneralGraph{Int}(() -> 1, name, source))
 end
 
 num_nodes(g::NormalUnweightedGraph) = g.n
@@ -255,5 +259,8 @@ function Base.write(io::IO, g::NormalUnweightedGraph)
         end
     end
 end
+
+g = GeneralGraph("hamster", "data/graph.txt")
+write("data/new_graph.txt", NormalWeightedGraph(g))
 
 end # module GeneralGraphs
