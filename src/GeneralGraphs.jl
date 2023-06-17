@@ -260,7 +260,4 @@ function Base.write(io::IO, g::NormalUnweightedGraph)
     end
 end
 
-g = GeneralGraph("hamster", "data/graph.txt")
-write("data/new_graph.txt", NormalWeightedGraph(g))
-
 end # module GeneralGraphs
