@@ -9,6 +9,7 @@ using SparseArrays
 
 export AbstractGraph, GeneralGraph, NormalGraph, NormalWeightedGraph, NormalUnweightedGraph
 export num_nodes, num_edges
+export diagadj
 export LCC, LCC!
 
 abstract type AbstractGraph end
