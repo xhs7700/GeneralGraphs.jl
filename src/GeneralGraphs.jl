@@ -203,14 +203,11 @@ function diagadj(g::NormalWeightedGraph{T}) where {T<:Real}
     n, m = g.n, g.m
     A_I, A_J, A_V = Int[], Int[], T[]
     sizehint!(A_I, 2 * m), sizehint!(A_J, 2 * m), sizehint!(A_V, 2 * m)
-    d = zeros(T, n)
+    d = Vector{T}(undef, n)
     for i in 1:n
         len = length(g.adjs[i])
         append!(A_I, repeat([i], len)), append!(A_J, g.adjs[i]), append!(A_V, g.weights[i])
-        d[i] += sum(g.weights[i])
-        for (v, w) in zip(g.adjs[i], g.weights[i])
-            d[v] += w
-        end
+        d[i] = sum(g.weights[i])
     end
     return d, sparse(A_I, A_J, A_V)
 end
@@ -282,14 +279,11 @@ function diagadj(g::NormalUnweightedGraph)
     n, m = g.n, g.m
     A_I, A_J = Int[], Int[]
     sizehint!(A_I, 2 * m), sizehint!(A_J, 2 * m)
-    d = zeros(Int, n)
+    d = Vector{Int}(undef, n)
     for i in 1:n
         len = length(g.adjs[i])
         append!(A_I, repeat([i], len)), append!(A_J, g.adjs[i])
-        d[i] += len
-        for v in g.adjs[i]
-            d[v] += 1
-        end
+        d[i] = len
     end
     return d, sparse(A_I, A_J, ones(Int, length(A_I)))
 end
