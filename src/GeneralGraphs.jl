@@ -20,7 +20,7 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
     nodes::Set{Int}
     edges::Dict{Tuple{Int,Int},T}
     GeneralGraph{T}() where {T<:Real} = new{T}("", Set{Int}(), Dict{Tuple{Int,Int},T}())
-    GeneralGraph{T}(name::AbstractString, nodes::Set{Int}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, nodes, edges)
+    GeneralGraph(name::AbstractString, nodes::Set{Int}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, nodes, edges)
     function GeneralGraph(name::AbstractString, source::Union{AbstractString,IO})
         println("Reading graph $name...")
         nodes = Set{Int}()
@@ -94,7 +94,7 @@ function LCC(g::GeneralGraph)
     root = argmin(fa)
     new_nodes = filter(x -> find(x) == root, g.nodes)
     new_edges = filter(e -> find(e.first[1]) == root && find(e.first[2]) == root, g.edges)
-    return GeneralGraph{eltype(values(new_edges))}("$(g.name)_LCC", new_nodes, new_edges)
+    return GeneralGraph("$(g.name)_LCC", new_nodes, new_edges)
 end
 
 function LCC!(g::GeneralGraph)
