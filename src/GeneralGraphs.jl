@@ -275,17 +275,19 @@ function Base.write(io::IO, g::NormalUnweightedGraph)
     end
 end
 
-function diagadj(g::NormalUnweightedGraph)
+function diagadj(::Type{T}, g::NormalUnweightedGraph) where {T<:Real}
     n, m = g.n, g.m
     A_I, A_J = Int[], Int[]
     sizehint!(A_I, 2 * m), sizehint!(A_J, 2 * m)
-    d = Vector{Int}(undef, n)
+    d = Vector{T}(undef, n)
     for i in 1:n
         len = length(g.adjs[i])
         append!(A_I, repeat([i], len)), append!(A_J, g.adjs[i])
         d[i] = len
     end
-    return d, sparse(A_I, A_J, ones(Int, length(A_I)))
+    return d, sparse(A_I, A_J, ones(T, length(A_I)))
 end
+
+diagadj(g::NormalUnweightedGraph) = diagadj(Float64, g)
 
 end # module GeneralGraphs
