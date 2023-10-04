@@ -254,6 +254,7 @@ struct NormalUnweightedGraph <: NormalGraph
         end
         new(n, length(g.edges), g.name, adjs)
     end
+    NormalUnweightedGraph(n::Int, m::Int, name::AbstractString, adjs::Vector{Vector{Int}}) = new(n, m, name, adjs)
     NormalUnweightedGraph(name::AbstractString, source::Union{AbstractString,IO}) = NormalUnweightedGraph(GeneralGraph{Int}(() -> 1, name, source))
 end
 
