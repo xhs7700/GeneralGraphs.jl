@@ -30,7 +30,7 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
                 continue
             end
             line = strip(line, ('\t', ' '))
-            u, v, w = map(x -> parse(Int, x), split(line, ('\t', ' ')))
+            u, v, w = map(x -> parse(Int, x), split(line, ('\t', ' ', ',')))
             if u == v
                 continue
             end
@@ -54,7 +54,7 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
                 continue
             end
             line = strip(line, ('\t', ' '))
-            u, v = map(x -> parse(Int, x), split(line, ('\t', ' ')))
+            u, v = map(x -> parse(Int, x), split(line, ('\t', ' ', ',')))
             if u == v
                 continue
             end
