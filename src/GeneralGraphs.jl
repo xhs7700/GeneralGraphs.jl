@@ -489,7 +489,7 @@ function diagadj(g::NormalWeightedDiGraph{T}) where {T<:Real}
     return d, sparse(A_I, A_J, A_V, n, n)
 end
 
-struct NormalUnweightedDiGraph
+struct NormalUnweightedDiGraph <: NormalDiGraph
     n::Int
     m::Int
     name::AbstractString
