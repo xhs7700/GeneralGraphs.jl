@@ -187,48 +187,61 @@ function Base.write(io::IO, g::GeneralDiGraph)
     end
 end
 
+
 function get_lscc_info(g::GeneralDiGraph)
     println("Finding LSCC of directed graph $(g.name)...")
     n = num_nodes(g)
     dfn, low = Dict{Int,Int}(), Dict{Int,Int}()
     scc_id = Dict{Int,Int}()
-    in_stk, vis = Set{Int}(), Set{Int}()
-    stk, scc_size = Int[], Int[]
+    in_stk, out_of_stk, vis = Set{Int}(), Set{Int}(), Set{Int}()
+    dfs_stk, stk, scc_size = Tuple{Int,Int}[], Int[], Int[]
     dfn_cnt = 0
     scc_cnt = 0
     sizehint!(dfn, n), sizehint!(low, n)
     sizehint!(vis, n), sizehint!(scc_id, n)
-    function tarjan(u::Int)
-        push!(vis, u)
-        dfn_cnt += 1
-        dfn[u] = low[u] = dfn_cnt
-        push!(stk, u)
-        push!(in_stk, u)
-        for (v, _) in g.adjs[u]
-            if !(v in vis)
-                tarjan(v)
-                low[u] = min(low[u], low[v])
-            elseif v in in_stk
-                low[u] = min(low[u], dfn[v])
-            end
+    sizehint!(out_of_stk, n)
+    for i in keys(g.adjs)
+        if i in vis
+            continue
         end
-        if dfn[u] == low[u]
-            scc_cnt += 1
-            push!(scc_size, 0)
-            while true
-                v = pop!(stk)
-                delete!(in_stk, v)
-                scc_id[v] = scc_cnt
-                scc_size[scc_cnt] += 1
-                if v == u
-                    break
+        push!(dfs_stk, (0, i))
+        while !isempty(dfs_stk)
+            pre, u = dfs_stk[end]
+            if !(u in vis)
+                push!(vis, u)
+                dfn_cnt += 1
+                dfn[u] = low[u] = dfn_cnt
+                push!(stk, u)
+                push!(in_stk, u)
+                for (v, _) in g.adjs[u]
+                    if !(v in vis)
+                        push!(dfs_stk, (u, v))
+                    elseif v in in_stk
+                        low[u] = min(low[u], dfn[v])
+                    end
+                end
+            else
+                pop!(dfs_stk)
+                if !(u in out_of_stk)
+                    push!(out_of_stk, u)
+                    if pre != 0
+                        low[pre] = min(low[pre], low[u])
+                    end
+                    if dfn[u] == low[u]
+                        scc_cnt += 1
+                        push!(scc_size, 0)
+                        while true
+                            v = pop!(stk)
+                            delete!(in_stk, v)
+                            scc_id[v] = scc_cnt
+                            scc_size[scc_cnt] += 1
+                            if v == u
+                                break
+                            end
+                        end
+                    end
                 end
             end
-        end
-    end
-    for u in keys(g.adjs)
-        if !(u in vis)
-            tarjan(u)
         end
     end
     lscc_id = argmax(scc_size)
