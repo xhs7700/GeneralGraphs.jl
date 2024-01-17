@@ -1,5 +1,6 @@
 .vscode
 /Manifest.toml
+test/Manifest.toml
 tmp/
 src/tmp.jl
 src/temp.jl
