@@ -26,10 +26,15 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
     GeneralGraph{T}() where {T<:Real} = new{T}("", Set{Int}(), Dict{Tuple{Int,Int},T}())
     GeneralGraph{T}(name::AbstractString) where {T<:Real} = new{T}(name, Set{Int}(), Dict{Tuple{Int,Int},T}())
     GeneralGraph(name::AbstractString, nodes::Set{Int}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, nodes, edges)
-    function GeneralGraph(name::AbstractString, source::Union{AbstractString,IO})
+    function GeneralGraph(name::AbstractString, io::IO)
         println("Reading graph $name...")
         g = GeneralGraph{Int}(name)
-        for line in ProgressBar(eachline(source))
+        seekend(io)
+        pm = Progress(position(io); dt=0.5)
+        seekstart(io)
+        while !eof(io)
+            line = readline(io)
+            ProgressMeter.update!(pm, position(io))
             if line[begin] in "#%"
                 continue
             end
@@ -37,6 +42,13 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
             u, v, w = map(x -> parse(Int, x), split(line, ('\t', ' ', ',')))
             add_edge!(g, (u, v, w))
         end
+        finish!(pm)
+        g
+    end
+    function GeneralGraph(name::AbstractString, source::AbstractString)
+        io = open(source, "r")
+        g = GeneralGraph(name, io)
+        close(io)
         g
     end
     function GeneralGraph{T}(generator::Function, name::AbstractString, io::IO) where {T<:Real}
@@ -90,7 +102,9 @@ function LCC(g::GeneralGraph)
     println("Finding LCC of graph $(g.name)...")
     fa = DefaultDict{Int,Int}(-1)
     find(x) = fa[x] < 0 ? x : (fa[x] = find(fa[x]); fa[x])
-    for (u, v) in ProgressBar(keys(g.edges))
+    pm = Progress(length(g.edges); dt=0.5)
+    for (u, v) in keys(g.edges)
+        next!(pm)
         u, v = find(u), find(v)
         if u == v
             continue
@@ -101,6 +115,7 @@ function LCC(g::GeneralGraph)
         fa[u] += fa[v]
         fa[v] = u
     end
+    finish!(pm)
     root = argmin(fa)
     new_nodes = filter(x -> find(x) == root, g.nodes)
     new_edges = filter(e -> find(e.first[1]) == root && find(e.first[2]) == root, g.edges)
@@ -111,7 +126,9 @@ function LCC!(g::GeneralGraph)
     println("Finding LCC on graph $(g.name)...")
     fa = DefaultDict{Int,Int}(-1)
     find(x) = fa[x] < 0 ? x : (fa[x] = find(fa[x]); fa[x])
-    for (u, v) in ProgressBar(keys(g.edges))
+    pm = Progress(length(g.edges); dt=0.5)
+    for (u, v) in keys(g.edges)
+        next!(pm)
         u, v = find(u), find(v)
         if u == v
             continue
@@ -122,6 +139,7 @@ function LCC!(g::GeneralGraph)
         fa[u] += fa[v]
         fa[v] = u
     end
+    finish!(pm)
     root = argmin(fa)
     filter!(x -> find(x) == root, g.nodes)
     filter!(e -> find(e.first[1]) == root && find(e.first[2]) == root, g.edges)
@@ -132,9 +150,12 @@ Base.write(file_path::AbstractString, g::AbstractGraph) = open(io -> write(io, g
 function Base.write(io::IO, g::GeneralGraph)
     n, m = size(g)
     write(io, "# $(prefix(g)): $(g.name)\n# Nodes: $n Edges: $m\n")
-    for (u, v) in g.edges |> keys |> collect |> sort |> ProgressBar
+    pm = Progress(length(g.edges); dt=0.5)
+    for (u, v) in g.edges |> keys |> collect |> sort
         write(io, "$u\t$v\t$(g.edges[(u,v)])\n")
+        next!(pm)
     end
+    finish!(pm)
 end
 
 struct GeneralDiGraph{T<:Real} <: AbstractGraph
@@ -144,10 +165,15 @@ struct GeneralDiGraph{T<:Real} <: AbstractGraph
     GeneralDiGraph{T}() where {T<:Real} = new{T}("", Dict{Int,Vector{Tuple{Int,T}}}(), Dict{Tuple{Int,Int},T}())
     GeneralDiGraph{T}(name::AbstractString) where {T<:Real} = new{T}(name, Dict{Int,Vector{Tuple{Int,T}}}(), Dict{Tuple{Int,Int},T}())
     GeneralDiGraph{T}(name::AbstractString, adjs::Dict{Int,Vector{Tuple{Int,T}}}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, adjs, edges)
-    function GeneralDiGraph(name::AbstractString, source::Union{AbstractString,IO})
+    function GeneralDiGraph(name::AbstractString, io::IO)
         println("Reading directed graph $name...")
         g = GeneralDiGraph{Int}(name)
-        for line in ProgressBar(eachline(source))
+        seekend(io)
+        pm = Progress(position(io); dt=0.5)
+        seekstart(io)
+        while !eof(io)
+            line = readline(io)
+            ProgressMeter.update!(pm, position(io))
             if line[begin] in "#%"
                 continue
             end
@@ -155,12 +181,24 @@ struct GeneralDiGraph{T<:Real} <: AbstractGraph
             u, v, w = map(x -> parse(Int, x), split(line, ('\t', ' ', ',')))
             add_edge!(g, (u, v, w))
         end
+        finish!(pm)
         g
     end
-    function GeneralDiGraph{T}(generator::Function, name::AbstractString, source::Union{AbstractString,IO}) where {T<:Real}
+    function GeneralDiGraph(name::AbstractString, source::AbstractString)
+        io = open(source, "r")
+        g = GeneralDiGraph(name, io)
+        close(io)
+        g
+    end
+    function GeneralDiGraph{T}(generator::Function, name::AbstractString, io::IO) where {T<:Real}
         println("Reading directed graph $name...")
         g = GeneralDiGraph{Int}(name)
-        for line in ProgressBar(eachline(source))
+        seekend(io)
+        pm = Progress(position(io); dt=0.5)
+        seekstart(io)
+        while !eof(io)
+            line = readline(io)
+            ProgressMeter.update!(pm, position(io))
             if line[begin] in "#%"
                 continue
             end
@@ -168,6 +206,13 @@ struct GeneralDiGraph{T<:Real} <: AbstractGraph
             u, v = map(x -> parse(Int, x), split(line, ('\t', ' ', ',')))
             add_edge!(g, (u, v, generator()))
         end
+        finish!(pm)
+        g
+    end
+    function GeneralDiGraph{T}(generator::Function, name::AbstractString, source::AbstractString) where {T<:Real}
+        io = open(source, "r")
+        g = GeneralDiGraph{T}(generator, name, io)
+        close(io)
         g
     end
 end
@@ -194,9 +239,12 @@ end
 function Base.write(io::IO, g::GeneralDiGraph)
     n, m = size(g)
     write(io, "# $(prefix(g)): $(g.name)\n# Nodes: $n Edges: $m\n")
-    for (u, v) in g.edges |> keys |> collect |> sort |> ProgressBar
+    pm = Progress(length(g.edges); dt=0.5)
+    for (u, v) in g.edges |> keys |> collect |> sort
         write(io, "$u\t$v\t$(g.edges[(u,v)])\n")
+        next!(pm)
     end
+    finish!(pm)
 end
 
 
@@ -302,16 +350,20 @@ struct NormalWeightedGraph{T<:Real} <: NormalGraph
         adjs = Vector{Vector{Int}}(undef, n)
         weights = Vector{Vector{T}}(undef, n)
         renumber = maximum(g.nodes; init=0) != n
+        pm = Progress(length(g.edges); dt=0.5)
         if renumber
-            for (u, v) in ProgressBar(keys(g.edges))
+            for (u, v) in keys(g.edges)
                 new_u, new_v = o2n[u], o2n[v]
                 degs[new_u], degs[new_v] = degs[new_u] + 1, degs[new_v] + 1
+                next!(pm)
             end
         else
-            for (u, v) in ProgressBar(keys(g.edges))
+            for (u, v) in keys(g.edges)
                 degs[u], degs[v] = degs[u] + 1, degs[v] + 1
+                next!(pm)
             end
         end
+        finish!(pm)
         for i in (1:n)
             deg = degs[i]
             adjs[i] = Vector{Int}()
@@ -384,31 +436,39 @@ struct NormalUnweightedGraph <: NormalGraph
         degs = zeros(Int, n)
         adjs = Vector{Vector{Int}}(undef, n)
         renumber = maximum(g.nodes; init=0) != n
+        pm1 = Progress(length(g.edges); dt=0.5)
         if renumber
-            for (u, v) in ProgressBar(keys(g.edges))
+            for (u, v) in keys(g.edges)
                 new_u, new_v = o2n[u], o2n[v]
                 degs[new_u], degs[new_v] = degs[new_u] + 1, degs[new_v] + 1
+                next!(pm1)
             end
         else
-            for (u, v) in ProgressBar(keys(g.edges))
+            for (u, v) in keys(g.edges)
                 degs[u], degs[v] = degs[u] + 1, degs[v] + 1
+                next!(pm1)
             end
         end
+        finish!(pm1)
         for i in (1:n)
             deg = degs[i]
             adjs[i] = Vector{Int}()
             sizehint!(adjs[i], deg)
         end
+        pm2 = Progress(length(g.edges); dt=0.5)
         if renumber
-            for (u, v) in ProgressBar(keys(g.edges))
+            for (u, v) in keys(g.edges)
                 new_u, new_v = o2n[u], o2n[v]
                 push!(adjs[new_u], new_v), push!(adjs[new_v], new_u)
+                next!(pm2)
             end
         else
-            for (u, v) in ProgressBar(keys(g.edges))
+            for (u, v) in keys(g.edges)
                 push!(adjs[u], v), push!(adjs[v], u)
+                next!(pm2)
             end
         end
+        finish!(pm2)
         for i in (1:n)
             p = sortperm(adjs[i])
             permute!(adjs[i], p)
@@ -465,18 +525,22 @@ struct NormalWeightedDiGraph{T<:Real} <: NormalDiGraph
         adjs = Vector{Vector{Int}}(undef, n)
         weights = Vector{Vector{T}}(undef, n)
         renumber = maximum(keys(g.adjs); init=0) != n
+        pm = Progress(length(g.adjs); dt=0.5)
         if renumber
-            for u in ProgressBar(keys(g.adjs))
+            for u in keys(g.adjs)
                 new_u = o2n[u]
                 adjs[new_u] = map(t -> o2n[t[1]], g.adjs[u])
                 weights[new_u] = map(t -> t[2], g.adjs[u])
+                next!(pm)
             end
         else
-            for u in ProgressBar(keys(g.adjs))
+            for u in keys(g.adjs)
                 adjs[u] = map(t -> t[1], g.adjs[u])
                 weights[u] = map(t -> t[2], g.adjs[u])
+                next!(pm)
             end
         end
+        finish!(pm)
         for i in (1:n)
             p = sortperm(adjs[i])
             permute!(adjs[i], p), permute!(weights[i], p)
@@ -524,18 +588,22 @@ struct NormalUnweightedDiGraph <: NormalDiGraph
         o2n = DefaultDict{Int,Int}(() -> length(o2n) + 1)
         adjs = Vector{Vector{Int}}(undef, n)
         renumber = maximum(keys(g.adjs); init=0) != n
+        pm = Progress(length(g.adjs); dt=0.5)
         if renumber
-            for u in ProgressBar(keys(g.adjs))
+            for u in keys(g.adjs)
                 new_u = o2n[u]
                 adjs[new_u] = map(t -> o2n[t[1]], g.adjs[u])
                 sort!(adjs[new_u])
+                next!(pm)
             end
         else
-            for u in ProgressBar(keys(g.adjs))
+            for u in keys(g.adjs)
                 adjs[u] = map(t -> t[1], g.adjs[u])
                 sort!(adjs[u])
+                next!(pm)
             end
         end
+        finish!(pm)
         new(n, length(g.edges), g.name, adjs)
     end
     NormalUnweightedDiGraph(n::Int, m::Int, name::AbstractString, adjs::Vector{Vector{Int}}) = new(n, m, name, adjs)
