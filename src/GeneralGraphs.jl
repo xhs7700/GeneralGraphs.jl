@@ -1,6 +1,6 @@
 module GeneralGraphs
 
-using ProgressBars
+using ProgressBars, ProgressMeter
 using Base.Filesystem
 using StatsBase
 using DataStructures
@@ -39,10 +39,15 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
         end
         g
     end
-    function GeneralGraph{T}(generator::Function, name::AbstractString, source::Union{AbstractString,IO}) where {T<:Real}
+    function GeneralGraph{T}(generator::Function, name::AbstractString, io::IO) where {T<:Real}
         println("Reading graph $name...")
         g = GeneralGraph{Int}(name)
-        for line in ProgressBar(eachline(source))
+        seekend(io)
+        pm = Progress(position(io); dt=0.5)
+        seekstart(io)
+        while !eof(io)
+            line = readline(io)
+            ProgressMeter.update!(pm, position(io))
             if line[begin] in "#%"
                 continue
             end
@@ -50,6 +55,13 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
             u, v = map(x -> parse(Int, x), split(line, ('\t', ' ', ',')))
             add_edge!(g, (u, v, generator()))
         end
+        finish!(pm)
+        g
+    end
+    function GeneralGraph{T}(generator::Function, name::AbstractString, source::AbstractString) where {T<:Real}
+        io = open(source, "r")
+        g = GeneralGraph{T}(generator, name, io)
+        close(io)
         g
     end
 end
