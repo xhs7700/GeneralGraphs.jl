@@ -400,6 +400,7 @@ prefix(::NormalWeightedGraph) = "WeightedUndiGraph"
 
 function Base.write(io::IO, g::NormalWeightedGraph)
     write(io, "# $(prefix(g)): $(g.name)\n# Nodes: $(g.n) Edges: $(g.m)\n")
+    pm = Progress(g.m; dt=0.5)
     for u in 1:g.n
         len = length(g.adjs[u])
         for i in 1:len
@@ -408,8 +409,10 @@ function Base.write(io::IO, g::NormalWeightedGraph)
                 continue
             end
             write(io, "$u\t$v\t$(g.weights[u][i])\n")
+            next!(pm)
         end
     end
+    finish!(pm)
 end
 
 function diagadj(g::NormalWeightedGraph{T}) where {T<:Real}
@@ -485,6 +488,7 @@ prefix(::NormalUnweightedGraph) = "UnweightedUndiGraph"
 
 function Base.write(io::IO, g::NormalUnweightedGraph)
     write(io, "# $(prefix(g)): $(g.name)\n# Nodes: $(g.n) Edges: $(g.m)\n")
+    pm = Progress(g.m; dt=0.5)
     for u in 1:g.n
         len = length(g.adjs[u])
         for i in 1:len
@@ -493,8 +497,10 @@ function Base.write(io::IO, g::NormalUnweightedGraph)
                 continue
             end
             write(io, "$u\t$v\n")
+            next!(pm)
         end
     end
+    finish!(pm)
 end
 
 function diagadj(::Type{T}, g::NormalUnweightedGraph) where {T<:Real}
@@ -558,11 +564,16 @@ prefix(::NormalWeightedDiGraph) = "WeightedDiGraph"
 
 function Base.write(io::IO, g::NormalWeightedDiGraph)
     write(io, "# $(prefix(g)): $(g.name)\n# Nodes: $(g.n) Edges: $(g.m)\n")
+    pm = Progress(g.m; dt=0.5)
+    cnt = 0
     for u in 1:g.n
         for (v, w) in zip(g.adjs[u], g.weights[u])
             write(io, "$u\t$v\t$w\n")
         end
+        cnt += length(g.adjs[u])
+        ProgressMeter.update!(pm, cnt)
     end
+    finish!(pm)
 end
 
 function diagadj(g::NormalWeightedDiGraph{T}) where {T<:Real}
@@ -616,11 +627,16 @@ prefix(::NormalUnweightedDiGraph) = "UnweightedDiGraph"
 
 function Base.write(io::IO, g::NormalUnweightedDiGraph)
     write(io, "# $(prefix(g)): $(g.name)\n# Nodes: $(g.n) Edges: $(g.m)\n")
+    pm = Progress(g.m; dt=0.5)
+    cnt = 0
     for u in 1:g.n
         for v in g.adjs[u]
             write(io, "$u\t$v\n")
         end
+        cnt += length(g.adjs[u])
+        ProgressMeter.update!(pm, cnt)
     end
+    finish!(pm)
 end
 
 function diagadj(::Type{T}, g::NormalUnweightedDiGraph) where {T<:Real}
