@@ -53,7 +53,7 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
     end
     function GeneralGraph{T}(generator::Function, name::AbstractString, io::IO) where {T<:Real}
         println("Reading graph $name...")
-        g = GeneralGraph{Int}(name)
+        g = GeneralGraph{T}(name)
         seekend(io)
         pm = Progress(position(io); dt=0.5)
         seekstart(io)
@@ -192,7 +192,7 @@ struct GeneralDiGraph{T<:Real} <: AbstractGraph
     end
     function GeneralDiGraph{T}(generator::Function, name::AbstractString, io::IO) where {T<:Real}
         println("Reading directed graph $name...")
-        g = GeneralDiGraph{Int}(name)
+        g = GeneralDiGraph{T}(name)
         seekend(io)
         pm = Progress(position(io); dt=0.5)
         seekstart(io)
