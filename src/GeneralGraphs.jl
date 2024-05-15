@@ -26,6 +26,28 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
     GeneralGraph{T}() where {T<:Real} = new{T}("", Set{Int}(), Dict{Tuple{Int,Int},T}())
     GeneralGraph{T}(name::AbstractString) where {T<:Real} = new{T}(name, Set{Int}(), Dict{Tuple{Int,Int},T}())
     GeneralGraph(name::AbstractString, nodes::Set{Int}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, nodes, edges)
+    function GeneralGraph{T}(name::AbstractString, io::IO) where {T<:Real}
+        println("Reading graph $name...")
+        g = GeneralGraph{T}(name)
+        seekend(io)
+        pm = Progress(position(io); dt=0.5)
+        seekstart(io)
+        while !eof(io)
+            line = readline(io)
+            ProgressMeter.update!(pm, position(io))
+            if line[begin] in "#%"
+                continue
+            end
+            line = strip(line, ('\t', ' '))
+            words = split(line, ('\t', ' ', ','))
+            u = parse(Int, words[1])
+            v = parse(Int, words[2])
+            w = parse(T, words[3])
+            add_edge!(g, (u, v, w))
+        end
+        finish!(pm)
+        g
+    end
     function GeneralGraph(name::AbstractString, io::IO)
         println("Reading graph $name...")
         g = GeneralGraph{Int}(name)
@@ -43,6 +65,12 @@ struct GeneralGraph{T<:Real} <: AbstractGraph
             add_edge!(g, (u, v, w))
         end
         finish!(pm)
+        g
+    end
+    function GeneralGraph{T}(name::AbstractString, source::AbstractString) where {T<:Real}
+        io = open(source, "r")
+        g = GeneralGraph{T}(name, io)
+        close(io)
         g
     end
     function GeneralGraph(name::AbstractString, source::AbstractString)
@@ -165,6 +193,28 @@ struct GeneralDiGraph{T<:Real} <: AbstractGraph
     GeneralDiGraph{T}() where {T<:Real} = new{T}("", Dict{Int,Vector{Tuple{Int,T}}}(), Dict{Tuple{Int,Int},T}())
     GeneralDiGraph{T}(name::AbstractString) where {T<:Real} = new{T}(name, Dict{Int,Vector{Tuple{Int,T}}}(), Dict{Tuple{Int,Int},T}())
     GeneralDiGraph{T}(name::AbstractString, adjs::Dict{Int,Vector{Tuple{Int,T}}}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, adjs, edges)
+    function GeneralDiGraph{T}(name::AbstractString, io::IO) where {T<:Real}
+        println("Reading directed graph $name...")
+        g = GeneralDiGraph{T}(name)
+        seekend(io)
+        pm = Progress(position(io); dt=0.5)
+        seekstart(io)
+        while !eof(io)
+            line = readline(io)
+            ProgressMeter.update!(pm, position(io))
+            if line[begin] in "#%"
+                continue
+            end
+            line = strip(line, ('\t', ' '))
+            words = split(line, ('\t', ' ', ','))
+            u = parse(Int, words[1])
+            v = parse(Int, words[2])
+            w = parse(T, words[3])
+            add_edge!(g, (u, v, w))
+        end
+        finish!(pm)
+        g
+    end
     function GeneralDiGraph(name::AbstractString, io::IO)
         println("Reading directed graph $name...")
         g = GeneralDiGraph{Int}(name)
@@ -182,6 +232,12 @@ struct GeneralDiGraph{T<:Real} <: AbstractGraph
             add_edge!(g, (u, v, w))
         end
         finish!(pm)
+        g
+    end
+    function GeneralDiGraph{T}(name::AbstractString, source::AbstractString) where {T<:Real}
+        io = open(source, "r")
+        g = GeneralDiGraph{T}(name, io)
+        close(io)
         g
     end
     function GeneralDiGraph(name::AbstractString, source::AbstractString)
@@ -390,6 +446,7 @@ struct NormalWeightedGraph{T<:Real} <: NormalGraph
         normalized_weights = [ProbabilityWeights(normalize(weights[u], 1)) for u in (1:n)]
         new{T}(n, length(g.edges), g.name, adjs, weights, normalized_weights)
     end
+    NormalWeightedGraph{T}(name::AbstractString, source::Union{AbstractString,IO}) where {T<:Real} = NormalWeightedGraph(GeneralGraph{T}(name, source))
     NormalWeightedGraph(name::AbstractString, source::Union{AbstractString,IO}) = NormalWeightedGraph(GeneralGraph(name, source))
     NormalWeightedGraph{T}(generator::Function, name::AbstractString, source::Union{AbstractString,IO}) where {T<:Real} = NormalWeightedGraph(GeneralGraph{T}(generator, name, source))
 end
@@ -554,6 +611,7 @@ struct NormalWeightedDiGraph{T<:Real} <: NormalDiGraph
         normalized_weights = [ProbabilityWeights(normalize(weights[u], 1)) for u in (1:n)]
         new{T}(n, length(g.edges), g.name, adjs, weights, normalized_weights)
     end
+    NormalWeightedDiGraph{T}(name::AbstractString, source::Union{AbstractString,IO}) where {T<:Real} = NormalWeightedDiGraph(GeneralDiGraph{T}(name, source))
     NormalWeightedDiGraph(name::AbstractString, source::Union{AbstractString,IO}) = NormalWeightedDiGraph(GeneralDiGraph(name, source))
     NormalWeightedDiGraph{T}(generator::Function, name::AbstractString, source::Union{AbstractString,IO}) where {T<:Real} = NormalWeightedDiGraph(GeneralDiGraph{T}(generator, name, source))
 end
