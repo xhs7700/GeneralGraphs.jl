@@ -5,6 +5,7 @@ struct NormalWeightedDiGraph{T<:Real} <: NormalDiGraph
     adjs::Vector{Vector{Int}}
     weights::Vector{Vector{T}}
     normalized_weights::Vector{ProbabilityWeights}
+    NormalWeightedDiGraph(n::Int, m::Int, name::AbstractString, adjs::Vector{Vector{Int}}, weights::Vector{Vector{T}}, normalized_weights::Vector{<:ProbabilityWeights}) where {T<:Real} = new{T}(n, m, name, adjs, weights, normalized_weights)
     function NormalWeightedDiGraph(g::GeneralDiGraph{T}) where {T<:Real}
         n = num_nodes(g)
         o2n = DefaultDict{Int,Int}(() -> length(o2n) + 1)
@@ -31,7 +32,7 @@ struct NormalWeightedDiGraph{T<:Real} <: NormalDiGraph
             p = sortperm(adjs[i])
             permute!(adjs[i], p), permute!(weights[i], p)
         end
-        normalized_weights = [ProbabilityWeights(normalize(weights[u], 1)) for u in (1:n)]
+        normalized_weights = [normalize(weights[u], 1) .|> abs |> pweights for u in (1:n)]
         new{T}(n, length(g.edges), g.name, adjs, weights, normalized_weights)
     end
     NormalWeightedDiGraph{T}(name::AbstractString, source::Union{AbstractString,IO}) where {T<:Real} = NormalWeightedDiGraph(GeneralDiGraph{T}(name, source))
@@ -65,7 +66,20 @@ function diagadj(g::NormalWeightedDiGraph{T}) where {T<:Real}
     for i in 1:n
         len = length(g.adjs[i])
         append!(A_I, repeat([i], len)), append!(A_J, g.adjs[i]), append!(A_V, g.weights[i])
-        d[i] = sum(g.weights[i])
+        d[i] = sum(abs, g.weights[i])
+    end
+    return d, sparse(A_I, A_J, A_V, n, n)
+end
+
+function diagadj(::Type{T1}, g::NormalWeightedDiGraph{T2}) where {T1<:Real,T2<:Real}
+    n, m = g.n, g.m
+    A_I, A_J, A_V = Int[], Int[], T1[]
+    sizehint!(A_I, m), sizehint!(A_J, m), sizehint!(A_V, m)
+    d = Vector{T1}(undef, n)
+    for i in 1:n
+        len = length(g.adjs[i])
+        append!(A_I, repeat([i], len)), append!(A_J, g.adjs[i]), append!(A_V, g.weights[i])
+        d[i] = sum(abs, g.weights[i])
     end
     return d, sparse(A_I, A_J, A_V, n, n)
 end
@@ -105,6 +119,38 @@ end
 num_nodes(g::NormalUnweightedDiGraph) = g.n
 num_edges(g::NormalUnweightedDiGraph) = g.m
 prefix(::NormalUnweightedDiGraph) = "UnweightedDiGraph"
+
+function gremban_expanse(g::NormalWeightedDiGraph{T}) where {T<:Real}
+    n, m = size(g)
+    new_name = "$(g.name)_expansion"
+    new_adjs = Vector{Vector{Int}}(undef, 2n)
+    new_weights = Vector{Vector{T}}(undef, 2n)
+    for u in 1:n
+        new_adjs[u] = similar(g.adjs[u])
+        new_adjs[u+n] = similar(g.adjs[u])
+        new_weights[u] = similar(g.weights[u])
+        new_weights[u+n] = similar(g.weights[u])
+    end
+    for u in 1:n
+        for (i, (v, w)) in enumerate(zip(g.adjs[u], g.weights[u]))
+            if w > 0
+                new_adjs[u][i] = v
+                new_adjs[u+n][i] = v + n
+                new_weights[u][i] = new_weights[u+n][i] = w
+            else
+                new_adjs[u][i] = v + n
+                new_adjs[u+n][i] = v
+                new_weights[u][i] = new_weights[u+n][i] = -w
+            end
+        end
+    end
+    for u in 1:2n
+        p = sortperm(new_adjs[u])
+        permute!(new_adjs[u], p), permute!(new_weights[u], p)
+    end
+    new_normalized_weights = [normalize(new_weights[u], 1) |> pweights for u in (1:2n)]
+    NormalWeightedDiGraph(2n, 2m, new_name, new_adjs, new_weights, new_normalized_weights)
+end
 
 function Base.write(io::IO, g::NormalUnweightedDiGraph)
     write(io, "# $(prefix(g)): $(g.name)\n# Nodes: $(g.n) Edges: $(g.m)\n")

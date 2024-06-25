@@ -4,7 +4,7 @@ struct GeneralDiGraph{T<:Real} <: AbstractGraph
     edges::Dict{Tuple{Int,Int},T}
     GeneralDiGraph{T}() where {T<:Real} = new{T}("", Dict{Int,Vector{Tuple{Int,T}}}(), Dict{Tuple{Int,Int},T}())
     GeneralDiGraph{T}(name::AbstractString) where {T<:Real} = new{T}(name, Dict{Int,Vector{Tuple{Int,T}}}(), Dict{Tuple{Int,Int},T}())
-    GeneralDiGraph{T}(name::AbstractString, adjs::Dict{Int,Vector{Tuple{Int,T}}}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, adjs, edges)
+    GeneralDiGraph(name::AbstractString, adjs::Dict{Int,Vector{Tuple{Int,T}}}, edges::Dict{Tuple{Int,Int},T}) where {T<:Real} = new{T}(name, adjs, edges)
     function GeneralDiGraph{T}(name::AbstractString, io::IO) where {T<:Real}
         println("Reading directed graph $name...")
         g = GeneralDiGraph{T}(name)

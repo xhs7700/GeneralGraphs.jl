@@ -11,7 +11,7 @@ export AbstractGraph, GeneralGraph, NormalGraph, NormalWeightedGraph, NormalUnwe
 export NormalDiGraph, GeneralDiGraph, NormalWeightedDiGraph, NormalUnweightedDiGraph
 export num_nodes, num_edges
 export add_node!, add_edge!
-export diagadj
+export diagadj, gremban_expanse
 export LCC, LCC!
 export LSCC, LSCC!
 
