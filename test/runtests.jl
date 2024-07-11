@@ -16,6 +16,5 @@ if !isdir("../tmp")
 end
 g = NormalWeightedGraph{Int}("toy4", "toy4.txt")
 write("../tmp/toy4_expansion.txt", gremban_expanse(g))
-g = NormalWeightedDiGraph{Int}("toy3", "toy3_raw.txt")
-write("toy3.txt", g)
+g = NormalWeightedDiGraph{Int}("toy3", "toy3.txt")
 write("../tmp/toy3_expansion.txt", gremban_expanse(g))

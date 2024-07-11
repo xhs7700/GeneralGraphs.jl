@@ -8,12 +8,15 @@ struct NormalWeightedDiGraph{T<:Real} <: NormalDiGraph
     NormalWeightedDiGraph(n::Int, m::Int, name::AbstractString, adjs::Vector{Vector{Int}}, weights::Vector{Vector{T}}, normalized_weights::Vector{<:ProbabilityWeights}) where {T<:Real} = new{T}(n, m, name, adjs, weights, normalized_weights)
     function NormalWeightedDiGraph(g::GeneralDiGraph{T}) where {T<:Real}
         n = num_nodes(g)
-        o2n = DefaultDict{Int,Int}(() -> length(o2n) + 1)
+        o2n = Dict{Int,Int}()
         adjs = Vector{Vector{Int}}(undef, n)
         weights = Vector{Vector{T}}(undef, n)
         renumber = maximum(keys(g.adjs); init=0) != n
         pm = Progress(length(g.adjs); dt=0.5)
         if renumber
+            for u in g.adjs |> keys |> collect |> sort
+                o2n[u] = length(o2n) + 1
+            end
             for u in keys(g.adjs)
                 new_u = o2n[u]
                 adjs[new_u] = map(t -> o2n[t[1]], g.adjs[u])
@@ -91,11 +94,14 @@ struct NormalUnweightedDiGraph <: NormalDiGraph
     adjs::Vector{Vector{Int}}
     function NormalUnweightedDiGraph(g::GeneralDiGraph)
         n = num_nodes(g)
-        o2n = DefaultDict{Int,Int}(() -> length(o2n) + 1)
+        o2n = Dict{Int,Int}()
         adjs = Vector{Vector{Int}}(undef, n)
         renumber = maximum(keys(g.adjs); init=0) != n
         pm = Progress(length(g.adjs); dt=0.5)
         if renumber
+            for u in g.adjs |> keys |> collect |> sort
+                o2n[u] = length(o2n) + 1
+            end
             for u in keys(g.adjs)
                 new_u = o2n[u]
                 adjs[new_u] = map(t -> o2n[t[1]], g.adjs[u])

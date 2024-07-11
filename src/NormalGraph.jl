@@ -8,13 +8,16 @@ struct NormalWeightedGraph{T<:Real} <: NormalGraph
     NormalWeightedGraph(n::Int, m::Int, name::AbstractString, adjs::Vector{Vector{Int}}, weights::Vector{Vector{T}}, normalized_weights::Vector{<:ProbabilityWeights}) where {T<:Real} = new{T}(n, m, name, adjs, weights, normalized_weights)
     function NormalWeightedGraph(g::GeneralGraph{T}) where {T<:Real}
         n = num_nodes(g)
-        o2n = DefaultDict{Int,Int}(() -> length(o2n) + 1)
+        o2n = Dict{Int,Int}()
         degs = zeros(Int, n)
         adjs = Vector{Vector{Int}}(undef, n)
         weights = Vector{Vector{T}}(undef, n)
         renumber = maximum(g.nodes; init=0) != n
         pm = Progress(length(g.edges); dt=0.5)
         if renumber
+            for u in g.nodes |> collect |> sort
+                o2n[u] = length(o2n) + 1
+            end
             for (u, v) in keys(g.edges)
                 new_u, new_v = o2n[u], o2n[v]
                 degs[new_u], degs[new_v] = degs[new_u] + 1, degs[new_v] + 1
@@ -144,12 +147,15 @@ struct NormalUnweightedGraph <: NormalGraph
     adjs::Vector{Vector{Int}}
     function NormalUnweightedGraph(g::GeneralGraph)
         n = num_nodes(g)
-        o2n = DefaultDict{Int,Int}(() -> length(o2n) + 1)
+        o2n = Dict{Int,Int}()
         degs = zeros(Int, n)
         adjs = Vector{Vector{Int}}(undef, n)
         renumber = maximum(g.nodes; init=0) != n
         pm1 = Progress(length(g.edges); dt=0.5)
         if renumber
+            for u in g.nodes |> collect |> sort
+                o2n[u] = length(o2n) + 1
+            end
             for (u, v) in keys(g.edges)
                 new_u, new_v = o2n[u], o2n[v]
                 degs[new_u], degs[new_v] = degs[new_u] + 1, degs[new_v] + 1
